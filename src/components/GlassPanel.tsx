@@ -5,7 +5,6 @@ interface Props {
   className?: string;
 }
 
-/** A translucent, blurred glass surface (section 5 design system). */
 export function GlassPanel({ children, className = "" }: Props) {
   return <div className={`glass ${className}`}>{children}</div>;
 }
@@ -16,7 +15,6 @@ interface SectionProps {
   right?: ReactNode;
 }
 
-/** A titled glass card. */
 export function Section({ title, children, right }: SectionProps) {
   return (
     <section className="glass card">

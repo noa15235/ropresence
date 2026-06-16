@@ -48,7 +48,6 @@ function resolve(
   return out.trim();
 }
 
-/** Live Discord card preview (#22), mirroring the Rust presence builder. */
 export function DiscordPreview() {
   const t = useT();
   const config = useAppStore((s) => s.config);
@@ -100,7 +99,6 @@ export function DiscordPreview() {
   const details = f.showDetails ? resolve(detailsTpl, config, rt, now) : "";
   const state = f.showState ? resolve(stateTpl, config, rt, now) : "";
 
-  // Large image: only "auto" (live icon) and "url" can be rendered in-preview.
   let largeUrl: string | null = null;
   if (f.showLargeImage) {
     if (mode === "game" && p.largeImageMode === "auto") largeUrl = rt.gameIconUrl;
@@ -113,8 +111,10 @@ export function DiscordPreview() {
     else if (p.smallImageMode === "avatar") smallUrl = rt.avatarUrl;
   }
 
-  const showTimer = f.showTimer && rt.sessionStart != null && mode !== "static";
-  const elapsed = rt.sessionStart ? Math.max(0, now - rt.sessionStart) : 0;
+  const timerStart =
+    mode === "game" ? rt.gameStart ?? rt.sessionStart : rt.sessionStart;
+  const showTimer = f.showTimer && timerStart != null && mode !== "static";
+  const elapsed = timerStart ? Math.max(0, now - timerStart) : 0;
 
   const buttons: string[] = [];
   if (f.showButtons) {
@@ -123,8 +123,9 @@ export function DiscordPreview() {
       const url = resolve(b.url, config, rt, now);
       if (label && /^https?:/.test(url)) buttons.push(label);
     }
-    if (f.autoButtons && mode === "game" && rt.placeId && buttons.length < 2) {
-      buttons.push("Voir l'expérience");
+    if (f.autoButtons && mode === "game") {
+      if (rt.placeId && buttons.length < 2) buttons.push("Rejoindre");
+      if (rt.userId && buttons.length < 2) buttons.push("Mon profil");
     }
     buttons.splice(2);
   }

@@ -1,6 +1,3 @@
-//! Resolution of dynamic presence variables like `{game}` or `{username}` (#12).
-
-/// Values available for substitution in presence templates.
 #[derive(Debug, Clone, Default)]
 pub struct VarContext {
     pub game: String,
@@ -11,11 +8,9 @@ pub struct VarContext {
     pub universe_id: String,
     pub players: String,
     pub job_id: String,
-    /// Elapsed seconds in the current session, if any (for `{time}`).
     pub elapsed_secs: Option<i64>,
 }
 
-/// Format a duration in seconds as a compact human string ("1h 23m" / "12m").
 fn format_elapsed(secs: i64) -> String {
     let secs = secs.max(0);
     let h = secs / 3600;
@@ -27,7 +22,6 @@ fn format_elapsed(secs: i64) -> String {
     }
 }
 
-/// Replace all known `{token}` occurrences in `template`.
 pub fn resolve(template: &str, ctx: &VarContext) -> String {
     let time = ctx
         .elapsed_secs
@@ -48,7 +42,6 @@ pub fn resolve(template: &str, ctx: &VarContext) -> String {
         .to_string()
 }
 
-/// The list of supported variable tokens (surfaced to the UI for help).
 pub const SUPPORTED_VARIABLES: &[&str] = &[
     "{game}",
     "{creator}",

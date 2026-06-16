@@ -1,19 +1,9 @@
-//! Application configuration model.
-//!
-//! This mirrors the `AppConfig` TypeScript interface used by the front-end.
-//! Everything is serialised in `camelCase` so the same JSON travels unchanged
-//! between Rust and the UI, and is persisted by `tauri-plugin-store`.
-
 pub mod store;
 
 use serde::{Deserialize, Serialize};
 
-/// Discord's built-in Roblox application id. Used as a zero-setup default so
-/// Rich Presence works out of the box (the card shows "ROBLOX"). Users can
-/// override it with their own application id for a custom name and images.
 pub const DEFAULT_CLIENT_ID: &str = "363445589247131668";
 
-/// A single Discord activity button (max 2 enforced when building the payload).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PresenceButton {
@@ -21,7 +11,6 @@ pub struct PresenceButton {
     pub url: String,
 }
 
-/// Per-feature on/off switches (#17). Defaults are all-on (party is opt-in).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct FeatureFlags {
@@ -50,23 +39,17 @@ impl Default for FeatureFlags {
     }
 }
 
-/// Visual presentation of the Discord card.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct PresenceConfig {
-    /// First line on the Discord card. Supports variables.
     pub details: String,
-    /// Second line on the Discord card. Supports variables.
     pub state: String,
-    /// "auto" (live game icon URL), "asset" (Discord asset key), or "url".
     pub large_image_mode: String,
     pub large_image_key: String,
     pub large_image_text: String,
-    /// "none", "asset", "url", or "avatar" (Roblox headshot).
     pub small_image_mode: String,
     pub small_image_key: String,
     pub small_image_text: String,
-    /// Custom buttons (max 2, Discord limit). Auto buttons are added separately.
     pub buttons: Vec<PresenceButton>,
 }
 
@@ -86,7 +69,6 @@ impl Default for PresenceConfig {
     }
 }
 
-/// Roblox detection settings.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct RobloxConfig {
@@ -94,11 +76,9 @@ pub struct RobloxConfig {
     pub accounts: Vec<String>,
     pub active_account: usize,
     pub detect_studio: bool,
-    /// "clear" or "static".
     pub fallback_when_closed: String,
     pub static_details: String,
     pub static_state: String,
-    /// Seconds between log/process polls (clamped 2..=15 at runtime).
     pub poll_interval_secs: u64,
 }
 
@@ -120,11 +100,8 @@ impl Default for RobloxConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Appearance {
-    /// "dark" or "light".
     pub theme: String,
-    /// Accent colour, hex string.
     pub accent: String,
-    /// "fr" or "en".
     pub language: String,
 }
 
@@ -145,7 +122,6 @@ pub struct SystemConfig {
     pub start_minimized: bool,
     pub close_to_tray: bool,
     pub notifications: bool,
-    /// Global hotkey to toggle the master switch (e.g. "CommandOrControl+Shift+R").
     pub hotkey_toggle: String,
 }
 
@@ -161,7 +137,6 @@ impl Default for SystemConfig {
     }
 }
 
-/// A saved, named presence profile (#35).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct PresenceProfile {
@@ -182,7 +157,6 @@ impl Default for PresenceProfile {
     }
 }
 
-/// Root configuration object, persisted as a single JSON blob.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct AppConfig {

@@ -1,7 +1,7 @@
-import { Radio, Gamepad2, Link2, Layers, Settings as SettingsIcon } from "lucide-react";
+import { Radio, Gamepad2, Layers, Settings as SettingsIcon } from "lucide-react";
 import { useT } from "@/i18n";
 
-export type Page = "presence" | "roblox" | "buttons" | "profiles" | "settings";
+export type Page = "presence" | "roblox" | "profiles" | "settings";
 
 interface Props {
   page: Page;
@@ -14,7 +14,6 @@ export function Sidebar({ page, onNavigate }: Props) {
   const items: { id: Page; icon: typeof Radio; label: string }[] = [
     { id: "presence", icon: Radio, label: t("nav.presence") },
     { id: "roblox", icon: Gamepad2, label: t("nav.roblox") },
-    { id: "buttons", icon: Link2, label: t("nav.buttons") },
     { id: "profiles", icon: Layers, label: t("nav.profiles") },
     { id: "settings", icon: SettingsIcon, label: t("nav.settings") },
   ];

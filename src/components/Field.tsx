@@ -1,17 +1,17 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 interface Props {
   label?: string;
   hint?: string;
   error?: string;
   ok?: string;
+  style?: CSSProperties;
   children: ReactNode;
 }
 
-/** A labelled form field wrapper with optional hint/validation text. */
-export function Field({ label, hint, error, ok, children }: Props) {
+export function Field({ label, hint, error, ok, style, children }: Props) {
   return (
-    <div className="field">
+    <div className="field" style={style}>
       {label && (
         <label className="label">
           {label}

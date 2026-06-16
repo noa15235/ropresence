@@ -39,14 +39,12 @@ export function Settings() {
   const setLook = (patch: Partial<Appearance>) =>
     update((c) => ({ ...c, appearance: { ...c.appearance, ...patch } }));
 
-  // Keep the autostart toggle in sync with the OS reality on mount.
   useEffect(() => {
     isAutostartEnabled()
       .then((en) => {
         if (en !== config.system.autostart) setSys({ autostart: en });
       })
       .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refreshLogs = () => api.getLogs().then(setLogs).catch(() => {});
@@ -268,7 +266,6 @@ function DiscordSection() {
       update((c) => ({ ...c, discordClientId: val.trim(), masterEnabled: true }));
       setStatus({ ok: true, msg: `${t("setup.valid")} · ${name}` });
       if (IS_TAURI) {
-        // Give the debounced save a moment, then force an immediate reconnect.
         setTimeout(() => api.reconnectDiscord().catch(() => {}), 400);
       }
     } catch (e) {
@@ -280,6 +277,23 @@ function DiscordSection() {
 
   return (
     <Section title={t("settings.discord")}>
+      <div className="help-box">
+        <div className="help-title">{t("setup.instructionsTitle")}</div>
+        <ol className="help-steps">
+          <li>{t("setup.instr1")}</li>
+          <li>{t("setup.instr2")}</li>
+          <li>{t("setup.instr3")}</li>
+          <li>{t("setup.instr4")}</li>
+        </ol>
+        <button
+          className="btn btn-sm"
+          style={{ marginTop: 10 }}
+          onClick={() => api.openUrl(PORTAL_URL)}
+        >
+          <ExternalLink size={14} />
+          {t("setup.openPortal")}
+        </button>
+      </div>
       <Field label={t("setup.clientIdLabel")} hint={t("setup.clientIdHelp")}>
         <input
           className="input"

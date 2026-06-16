@@ -6,7 +6,6 @@ import { useT } from "@/i18n";
 import { api, IS_TAURI } from "@/lib/tauri";
 import { DEFAULT_CLIENT_ID } from "@/lib/defaults";
 
-/** Prominent one-click Discord connect, shown whenever Discord is disconnected. */
 export function DiscordConnectBanner() {
   const t = useT();
   const connected = useAppStore((s) => s.runtime.discordConnected);
@@ -14,7 +13,6 @@ export function DiscordConnectBanner() {
   const update = useAppStore((s) => s.updateConfig);
   const [busy, setBusy] = useState(false);
 
-  // Guaranteed zero-setup connect: use Discord's built-in Roblox app id.
   async function quickConnect() {
     if (!IS_TAURI) return;
     setBusy(true);
@@ -23,7 +21,6 @@ export function DiscordConnectBanner() {
       discordClientId: DEFAULT_CLIENT_ID,
       masterEnabled: true,
     }));
-    // Let the debounced save land, then force an immediate reconnect.
     setTimeout(() => api.reconnectDiscord().catch(() => {}), 450);
     setTimeout(() => setBusy(false), 3000);
   }

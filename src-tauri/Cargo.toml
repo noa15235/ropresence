@@ -16,35 +16,25 @@ tauri-plugin-autostart = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-dialog = "2"
-
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-
-# Discord Rich Presence over the official local IPC socket (no token, no bot).
 discord-rich-presence = "0.2"
-
-# Lightweight blocking HTTP client for the public Roblox APIs.
 ureq = { version = "2", features = ["json"] }
-
 regex = "1"
 
-# Native process enumeration (ToolHelp) to detect the Roblox client.
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = [
   "Win32_Foundation",
   "Win32_System_Diagnostics_ToolHelp",
+  "Win32_System_SystemInformation",
 ] }
 
 [features]
-# By default Tauri ships with a custom protocol. Nothing extra needed here.
 default = []
 
-# Size-optimised release profile to keep the binary small (<15 MB target).
-# Faster, resumable release build (no LTO). Re-enable lto=true / codegen-units=1
-# / opt-level="s" for a smaller final binary when build time isn't a concern.
 [profile.release]
 panic = "abort"
-codegen-units = 16
-lto = false
-opt-level = 2
+codegen-units = 1
+lto = true
+opt-level = "s"
 strip = true

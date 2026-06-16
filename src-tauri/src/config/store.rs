@@ -1,17 +1,38 @@
-//! Persistence of [`AppConfig`] via `tauri-plugin-store`.
-//!
-//! The whole config is stored under a single `"config"` key in `config.json`
-//! inside the app data directory. Loads are tolerant: a missing or corrupt
-//! file falls back to defaults instead of panicking.
-
 use super::AppConfig;
+use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
 const STORE_FILE: &str = "config.json";
 const CONFIG_KEY: &str = "config";
+const STATS_KEY: &str = "stats";
 
-/// Load the config from disk, falling back to defaults on any error.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DailyStats {
+    pub date: String,
+    pub seconds: u64,
+}
+
+pub fn load_stats(app: &AppHandle) -> DailyStats {
+    match app.store(STORE_FILE) {
+        Ok(store) => store
+            .get(STATS_KEY)
+            .and_then(|v| serde_json::from_value(v).ok())
+            .unwrap_or_default(),
+        Err(_) => DailyStats::default(),
+    }
+}
+
+pub fn save_stats(app: &AppHandle, stats: &DailyStats) {
+    if let Ok(store) = app.store(STORE_FILE) {
+        if let Ok(value) = serde_json::to_value(stats) {
+            store.set(STATS_KEY, value);
+            let _ = store.save();
+        }
+    }
+}
+
 pub fn load_config(app: &AppHandle) -> AppConfig {
     let store = match app.store(STORE_FILE) {
         Ok(s) => s,
@@ -24,7 +45,6 @@ pub fn load_config(app: &AppHandle) -> AppConfig {
     }
 }
 
-/// Persist the config to disk. Returns a French error message on failure.
 pub fn save_config(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
     let store = app
         .store(STORE_FILE)

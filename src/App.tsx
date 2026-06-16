@@ -7,7 +7,6 @@ import { DiscordConnectBanner } from "@/components/DiscordConnectBanner";
 import { Setup } from "@/pages/Setup";
 import { Presence } from "@/pages/Presence";
 import { Roblox } from "@/pages/Roblox";
-import { Buttons } from "@/pages/Buttons";
 import { Profiles } from "@/pages/Profiles";
 import { Settings } from "@/pages/Settings";
 import { useAppStore } from "@/store/useAppStore";
@@ -30,12 +29,10 @@ export default function App() {
   const config = useAppStore((s) => s.config);
   const [page, setPage] = useState<Page>("presence");
 
-  // Initial config/runtime load.
   useEffect(() => {
     load();
   }, [load]);
 
-  // Subscribe to live runtime updates from the worker.
   useEffect(() => {
     if (!IS_TAURI) return;
     const unlisten = onRuntimeUpdate(setRuntime);
@@ -44,7 +41,6 @@ export default function App() {
     };
   }, [setRuntime]);
 
-  // Apply theme + accent to the document (#33).
   const theme = config?.appearance.theme;
   const accent = config?.appearance.accent;
   useEffect(() => {
@@ -58,7 +54,6 @@ export default function App() {
     root.setProperty("--accent-soft", hexToRgba(accent, 0.14));
   }, [accent]);
 
-  // Global hotkey to toggle the master switch (#44).
   const hotkey = config?.system.hotkeyToggle;
   useEffect(() => {
     if (!IS_TAURI) return;
@@ -101,7 +96,6 @@ export default function App() {
   const pages: Record<Page, ReactElement> = {
     presence: <Presence />,
     roblox: <Roblox />,
-    buttons: <Buttons />,
     profiles: <Profiles />,
     settings: <Settings />,
   };

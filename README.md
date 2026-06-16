@@ -1,148 +1,93 @@
-# RoPresence
+<div align="center">
 
-**Rich Presence Discord pour Roblox** — une application de bureau légère (Tauri 2 +
-React + Rust) qui détecte automatiquement le jeu Roblox que vous lancez et l'affiche
-sur votre profil Discord, via la **Rich Presence officielle**.
+# 🎮 RoPresence
 
-- 🪶 Légère — backend Rust, binaire compact, conso CPU ≈ 0 % au repos.
-- 🎨 Belle — design glassmorphism sombre/clair, animations Framer Motion.
-- 🔒 Conforme & sûre — **aucun token Discord, aucun cookie Roblox, aucun self-bot**.
-  Uniquement le RPC officiel Discord + les API publiques Roblox + les logs locaux.
+### Rich Presence Discord pour Roblox — légère, élégante, et sans risque pour ton compte.
 
----
+[![Tauri](https://img.shields.io/badge/Tauri-2.0-24C8DB?logo=tauri&logoColor=white)](https://tauri.app)
+[![Rust](https://img.shields.io/badge/Rust-stable-000000?logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-0078D6?logo=windows&logoColor=white)](#)
 
-## Comment ça marche
-
-1. **Détection Roblox** — l'app lit les logs locaux de Roblox
-   (`%LOCALAPPDATA%\Roblox\logs`) et la liste des processus pour savoir à quel jeu
-   vous jouez (placeId / universeId / jobId). Elle n'utilise jamais votre
-   cookie/compte Roblox.
-2. **Infos du jeu** — à partir du placeId, elle interroge les API publiques Roblox
-   (`games`, `thumbnails`, `apis`) pour le nom de l'expérience, le créateur et
-   l'icône.
-3. **Discord** — elle se connecte au client Discord déjà ouvert via le socket IPC
-   local (`discord-ipc-0`) et envoie une *Activity*. C'est l'usage prévu et
-   conforme aux ToS.
+</div>
 
 ---
 
-## Prérequis
+**RoPresence** détecte automatiquement le jeu Roblox que tu lances et l'affiche sur ton profil Discord : **icône du jeu, nom, créateur, minuteur** et boutons cliquables. Le tout via la **Rich Presence officielle de Discord** — **aucun token, aucun bot, aucun cookie**. Zéro risque pour ton compte Roblox ou Discord.
 
-- **Windows 10/11**
-- **Node.js** 18+ et **pnpm** (`npm i -g pnpm`)
-- **Rust** (toolchain MSVC) — https://rustup.rs
-- **Build Tools C++ de Visual Studio** (workload « Desktop development with C++ » +
-  Windows SDK) et **WebView2** (préinstallé sur Windows 11).
+## ✨ Fonctionnalités
 
----
+- 🎯 **Détection automatique** du jeu Roblox (lecture seule des logs locaux).
+- 🖼️ **Icône du jeu**, nom et créateur affichés en direct sur Discord.
+- ⏱️ **Trois minuteurs** : temps sur le jeu en cours (remis à zéro à chaque jeu), session Roblox totale, et temps de jeu du jour (remis à zéro à minuit).
+- 🔘 **Boutons automatiques** : *Rejoindre* + *Mon profil* Roblox.
+- 👤 **Connexion du compte** Roblox en un clic (avatar + profil), avec confirmation.
+- 🎨 **Interface glassmorphism** : thème sombre/clair, couleur d'accent, FR/EN.
+- 🧩 **Modèles** de présence en 1 clic (Détaillé, Simple, Streamer, Discret) + personnalisation complète.
+- 🪶 **Légère** : se réduit dans le system tray, ~0 % CPU au repos, RAM minimale.
+- 🔒 **Sûre & conforme** : RPC Discord officiel + API publiques Roblox + logs locaux. Rien d'autre ne quitte ta machine.
 
-## Créer votre application Discord (obligatoire)
+## 🚀 Installation
 
-La Rich Presence nécessite un **Client ID** (Application ID) que vous créez en 2 min :
+1. Va dans **[Releases](https://github.com/noa15235/ropresence/releases)** et télécharge la dernière version.
+2. Décompresse et lance **`ropresence.exe`**.
+3. Ça fonctionne immédiatement (application Roblox Discord intégrée).
+   Pour ton propre nom/branding, crée une app Discord et colle son *Application ID* dans **Réglages → Discord** (un tuto est intégré dans l'app).
 
-1. Ouvrez le **Discord Developer Portal** :
-   https://discord.com/developers/applications
-2. Cliquez sur **New Application**, donnez-lui un nom — ce nom apparaîtra comme
-   « joue à *…* » sur votre profil.
-3. Dans **General Information**, copiez l'**Application ID** (un nombre de 17–19
-   chiffres).
-4. Collez-le dans l'assistant de configuration de RoPresence au premier lancement.
+> Windows 10/11. WebView2 (préinstallé sur Windows 11) est requis.
 
-### (Optionnel) Images personnalisées — Art Assets
+## 🛠️ Build depuis les sources
 
-Discord n'affiche que des images **déjà uploadées dans votre application** ou des
-**URL d'image**. Pour utiliser une clé d'asset :
-
-1. Dans le portail, allez dans **Rich Presence → Art Assets**.
-2. **Add Image(s)**, uploadez votre image et donnez-lui un nom (la *clé*),
-   par ex. `roblox`.
-3. Dans RoPresence (onglet *Présence*), choisissez la source **« Clé d'asset
-   Discord »** et saisissez cette clé.
-
-> Par défaut, la grande image est en mode **« Icône du jeu (auto) »** : RoPresence
-> envoie directement l'URL de l'icône Roblox du jeu en cours, ce qui évite tout
-> upload. Si votre client Discord n'affiche pas les images par URL, basculez sur une
-> **clé d'asset**.
-
----
-
-## Installation & lancement
+Prérequis : **Node.js 18+**, **pnpm**, **Rust** (https://rustup.rs) et un linker C++.
 
 ```bash
-pnpm install          # dépendances front
-pnpm tauri dev        # lance l'app en mode développement
+pnpm install
+pnpm tauri dev      # développement
+pnpm tauri build    # build de production
 ```
 
-### Build de production
+## 🔐 Confidentialité
 
-```bash
-pnpm tauri build      # génère l'installeur (NSIS) dans src-tauri/target/release/bundle
-```
+| | |
+|---|---|
+| Token / bot / self-bot Discord | ❌ jamais |
+| Cookie / token de compte Roblox | ❌ jamais |
+| Logs Roblox locaux | ✅ lecture seule |
+| API publiques Roblox (nom, icône, avatar) | ✅ non authentifiées |
+| Données envoyées à des tiers | ❌ aucune |
 
-> Astuce : si `cargo`/`tauri` ne sont pas trouvés, vérifiez que
-> `%USERPROFILE%\.cargo\bin` est dans votre `PATH` (rouvrez le terminal après
-> l'installation de Rust).
+## 🧱 Stack
 
----
+Tauri 2 · Rust · React 18 · TypeScript · Vite · Zustand · Framer Motion · lucide-react
 
-## Variables dynamiques
-
-Utilisables dans les champs *Détails*, *État* et *Texte au survol* :
-
-| Variable        | Valeur                                  |
-| --------------- | --------------------------------------- |
-| `{game}`        | Nom de l'expérience                     |
-| `{creator}`     | Nom du créateur                         |
-| `{username}`    | Votre pseudo Roblox (compte actif)      |
-| `{placeId}`     | Identifiant de la place                 |
-| `{universeId}`  | Identifiant de l'univers                |
-| `{players}`     | Nombre de joueurs (si disponible)       |
-| `{jobId}`       | Identifiant de l'instance               |
-| `{time}`        | Temps écoulé dans la session            |
-
----
-
-## Fonctionnalités
-
-**Cœur (MVP)** : connexion RPC officielle, assistant de configuration, détection
-auto du jeu, infos via API Roblox, grande/petite image, textes personnalisables avec
-variables, minuteur de session, master switch, indicateurs Discord/Roblox en temps
-réel, toggles par fonctionnalité, persistance auto, system tray + fermer-vers-tray,
-édition live, aperçu Discord live, reconnexion auto, mode privé.
-
-**En plus** : boutons custom + bouton auto « Voir l'expérience », avatar Roblox,
-thème clair + couleur d'accent, profils multiples, présence statique, lancement au
-démarrage, démarrage minimisé, notifications natives, multi-comptes, détection
-Studio, import/export JSON, raccourci global, FR/EN, panneau de logs, compteur de
-joueurs (party).
-
----
-
-## Architecture
+## 📂 Architecture
 
 ```
 src-tauri/src/
-  main.rs            # setup app + tray + close-to-tray + worker
-  state.rs           # état partagé (config + runtime) + signaux du worker
-  commands.rs        # commands Tauri exposées au front
-  tray.rs            # icône + menu system tray
-  config/            # modèle de config + persistance (tauri-plugin-store)
-  discord/           # connexion IPC + envoi Activity + backoff de reconnexion
-  roblox/            # process watch + parsing logs + API publiques
-  presence/          # worker + builder Activity + résolution des variables
+  main.rs        setup app + tray + worker
+  state.rs       état partagé (config + runtime)
+  commands.rs    commandes exposées au front
+  config/        modèle de config + persistance
+  discord/       connexion IPC + envoi Activity + reconnexion
+  roblox/        détection process + parsing logs + API publiques
+  presence/      worker + construction de l'Activity + variables
 src/
-  pages/             # Setup, Presence, Roblox, Buttons, Profiles, Settings
-  components/        # Sidebar, StatusBar, DiscordPreview, Toggle, …
-  store/             # Zustand (config + runtime)
-  i18n/              # fr.json / en.json
-  styles/            # theme.css (tokens) + global.css
+  pages/         Presence, Roblox, Profils, Réglages
+  components/    Sidebar, StatusBar, DiscordPreview, SessionStats, …
+  store/         Zustand (config + runtime)
+  i18n/          fr.json / en.json
+  styles/        theme.css + global.css
 ```
+
+## 🔣 Variables dynamiques
+
+`{game}` · `{creator}` · `{username}` · `{userId}` · `{placeId}` · `{universeId}` · `{players}` · `{jobId}` · `{time}`
 
 ---
 
-## Confidentialité & conformité
+<div align="center">
 
-- Aucun **token Discord**, aucune lecture du compte/amis Discord.
-- Aucun **cookie/token Roblox**, aucun scraping authentifié.
-- Aucun **self-bot**. Uniquement : RPC officiel Discord + API publiques Roblox +
-  logs locaux en lecture seule.
+Fait avec ❤️ pour la communauté Roblox · **RoPresence**
+
+</div>

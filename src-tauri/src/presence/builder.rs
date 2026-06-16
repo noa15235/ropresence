@@ -1,8 +1,3 @@
-//! Build a Discord [`ActivityPayload`] from the current config + runtime state.
-//!
-//! This is the single place that maps Roblox state -> Discord card. It is pure
-//! (no I/O), which keeps the worker loop simple and makes diffing reliable.
-
 use crate::config::AppConfig;
 use crate::discord::ActivityPayload;
 use crate::presence::variables::{resolve, VarContext};
@@ -17,7 +12,6 @@ fn nonempty(s: &str) -> Option<String> {
     }
 }
 
-/// The username to display, honouring multi-account selection and privacy mode.
 pub fn active_username(cfg: &AppConfig) -> String {
     if cfg.privacy_mode {
         return String::new();
@@ -46,11 +40,7 @@ fn make_ctx(cfg: &AppConfig, rt: &RuntimeState) -> VarContext {
 
 fn large_image(cfg: &AppConfig, rt: &RuntimeState) -> Option<String> {
     match cfg.presence.large_image_mode.as_str() {
-        // A custom asset key or URL set by the user.
         "asset" | "url" => nonempty(&cfg.presence.large_image_key),
-        // "auto": use the live game icon URL (Discord RPC accepts external URLs
-        // in large_image with a valid app id). When no game is detected this is
-        // None, and Discord falls back to the application icon (Roblox logo).
         _ => rt.game_icon_url.clone(),
     }
 }
@@ -63,7 +53,6 @@ fn small_image(cfg: &AppConfig, rt: &RuntimeState) -> Option<String> {
     }
 }
 
-/// Build the activity, or `None` to clear the presence.
 pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
     if !cfg.master_enabled || cfg.discord_client_id.is_empty() {
         return None;
@@ -84,7 +73,6 @@ pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
     let pr = &cfg.presence;
     let mut p = ActivityPayload::default();
 
-    // Choose text templates by mode: in-game / studio / menu.
     let (details_tpl, state_tpl) = if rt.in_game {
         (pr.details.clone(), pr.state.clone())
     } else if studio {
@@ -102,8 +90,6 @@ pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
 
     if f.show_large_image {
         p.large_image = large_image(cfg, rt);
-        // Only attach hover text when there's an actual asset image; otherwise
-        // keep the assets minimal so Discord shows the application icon fallback.
         if p.large_image.is_some() {
             p.large_text = nonempty(&resolve(&pr.large_image_text, &ctx));
         }
@@ -114,7 +100,11 @@ pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
     }
 
     if f.show_timer {
-        p.start_timestamp = rt.session_start;
+        p.start_timestamp = if rt.in_game {
+            rt.game_start.or(rt.session_start)
+        } else {
+            rt.session_start
+        };
     }
 
     if f.show_buttons {
@@ -122,9 +112,6 @@ pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
         for b in &pr.buttons {
             let label = resolve(&b.label, &ctx);
             let url = resolve(&b.url, &ctx);
-            // Skip buttons whose variables didn't resolve (leftover `{...}`) or
-            // that left an empty path segment, e.g. `users//profile` when no
-            // username/userId is set — those would be dead links on Discord.
             let path_ok = url
                 .splitn(2, "://")
                 .nth(1)
@@ -133,14 +120,17 @@ pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
                 buttons.push((label, url));
             }
         }
-        // Auto button: the experience page (#27).
         if f.auto_buttons && rt.in_game {
             if let Some(pid) = rt.place_id {
-                if buttons.len() < 2 {
-                    buttons.push((
-                        "Voir l'expérience".to_string(),
-                        format!("https://www.roblox.com/games/{pid}"),
-                    ));
+                let url = format!("https://www.roblox.com/games/{pid}");
+                if buttons.len() < 2 && !buttons.iter().any(|(_, u)| *u == url) {
+                    buttons.push(("Rejoindre".to_string(), url));
+                }
+            }
+            if let Some(uid) = rt.user_id {
+                let url = format!("https://www.roblox.com/users/{uid}/profile");
+                if buttons.len() < 2 && !buttons.iter().any(|(_, u)| *u == url) {
+                    buttons.push(("Mon profil".to_string(), url));
                 }
             }
         }
@@ -159,7 +149,6 @@ pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
     Some(p)
 }
 
-/// Static presence used when Roblox is closed and fallback = "static" (#36).
 fn build_static(cfg: &AppConfig) -> ActivityPayload {
     let ctx = VarContext {
         username: active_username(cfg),
@@ -176,7 +165,6 @@ fn build_static(cfg: &AppConfig) -> ActivityPayload {
         p.state = nonempty(&resolve(&cfg.roblox.static_state, &ctx));
     }
     if f.show_large_image {
-        // No live game icon when closed: only an explicit asset/url key applies.
         if matches!(pr.large_image_mode.as_str(), "asset" | "url") {
             p.large_image = nonempty(&pr.large_image_key);
             p.large_text = nonempty(&resolve(&pr.large_image_text, &ctx));

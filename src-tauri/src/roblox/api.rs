@@ -1,8 +1,3 @@
-//! Public, unauthenticated Roblox API lookups (games, thumbnails, users).
-//!
-//! All endpoints here are public and require no auth. We only call them when
-//! the detected place changes, so traffic is minimal.
-
 use serde_json::Value;
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -33,13 +28,11 @@ fn get_json(url: &str) -> Option<Value> {
     agent().get(url).call().ok()?.into_json().ok()
 }
 
-/// place id -> universe id.
 pub fn resolve_universe(place_id: u64) -> Option<u64> {
     let url = format!("https://apis.roblox.com/universes/v1/places/{place_id}/universe");
     get_json(&url)?.get("universeId")?.as_u64()
 }
 
-/// universe id -> (name, creator name, playing, max players).
 pub fn fetch_details(universe_id: u64) -> Option<(String, String, Option<u64>, Option<u64>)> {
     let url = format!("https://games.roblox.com/v1/games?universeIds={universe_id}");
     let v = get_json(&url)?;
@@ -56,7 +49,6 @@ pub fn fetch_details(universe_id: u64) -> Option<(String, String, Option<u64>, O
     Some((name, creator, playing, max_players))
 }
 
-/// universe id -> icon image URL (512px PNG).
 pub fn fetch_icon(universe_id: u64) -> Option<String> {
     let url = format!(
         "https://thumbnails.roblox.com/v1/games/icons?universeIds={universe_id}&size=512x512&format=Png&isCircular=false"
@@ -73,7 +65,6 @@ pub fn fetch_icon(universe_id: u64) -> Option<String> {
     }
 }
 
-/// Convenience: resolve everything for a place in one call.
 pub fn fetch_game_info(place_id: u64, known_universe: Option<u64>) -> Option<GameInfo> {
     let universe_id = match known_universe {
         Some(u) if u > 0 => u,
@@ -92,7 +83,6 @@ pub fn fetch_game_info(place_id: u64, known_universe: Option<u64>) -> Option<Gam
     })
 }
 
-/// username -> user id (used for avatar thumbnails, LOT 2 #32).
 pub fn resolve_user_id(username: &str) -> Option<u64> {
     let body = serde_json::json!({ "usernames": [username], "excludeBannedUsers": false });
     let resp: Value = agent()
@@ -104,7 +94,43 @@ pub fn resolve_user_id(username: &str) -> Option<u64> {
     resp.get("data")?.as_array()?.first()?.get("id")?.as_u64()
 }
 
-/// user id -> avatar headshot URL.
+#[derive(Debug, Clone, Default)]
+pub struct RobloxAccount {
+    pub user_id: u64,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_url: Option<String>,
+}
+
+pub fn fetch_account(username: &str) -> Option<RobloxAccount> {
+    let body = serde_json::json!({ "usernames": [username], "excludeBannedUsers": false });
+    let resp: Value = agent()
+        .post("https://users.roblox.com/v1/usernames/users")
+        .send_json(body)
+        .ok()?
+        .into_json()
+        .ok()?;
+    let first = resp.get("data")?.as_array()?.first()?;
+    let user_id = first.get("id")?.as_u64()?;
+    let name = first
+        .get("name")
+        .and_then(|n| n.as_str())
+        .unwrap_or(username)
+        .to_string();
+    let display_name = first
+        .get("displayName")
+        .and_then(|n| n.as_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or(&name)
+        .to_string();
+    Some(RobloxAccount {
+        user_id,
+        username: name,
+        display_name,
+        avatar_url: fetch_avatar(user_id),
+    })
+}
+
 pub fn fetch_avatar(user_id: u64) -> Option<String> {
     let url = format!(
         "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds={user_id}&size=420x420&format=Png&isCircular=false"

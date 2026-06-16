@@ -8,7 +8,6 @@ import { api } from "@/lib/tauri";
 
 const PORTAL_URL = "https://discord.com/developers/applications";
 
-/** First-run wizard: collect + validate the Discord Client ID (#2). */
 export function Setup() {
   const t = useT();
   const config = useAppStore((s) => s.config)!;

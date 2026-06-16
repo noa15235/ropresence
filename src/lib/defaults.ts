@@ -1,9 +1,5 @@
-// Front-end defaults used in browser-preview mode (when the Tauri backend is
-// not present). In the real app these come from Rust via `get_config`.
-
 import type { AppConfig, RuntimeState } from "@/types";
 
-/** Discord's built-in Roblox application id — zero-setup default (shows "ROBLOX"). */
 export const DEFAULT_CLIENT_ID = "363445589247131668";
 
 export const DEFAULT_VARIABLES = [
@@ -23,7 +19,6 @@ export function defaultConfig(): AppConfig {
     discordClientId: DEFAULT_CLIENT_ID,
     masterEnabled: true,
     privacyMode: false,
-    // Preview: skip the wizard so the main UI is shown directly.
     setupComplete: true,
     presence: {
       details: "{game}",
@@ -69,7 +64,6 @@ export function defaultConfig(): AppConfig {
   };
 }
 
-/** A lively mock runtime so the preview card looks populated. */
 export function demoRuntime(): RuntimeState {
   return {
     discordConnected: true,
@@ -86,7 +80,9 @@ export function demoRuntime(): RuntimeState {
     userId: 1,
     playerCount: 124530,
     maxPlayers: 48,
-    sessionStart: Math.floor(Date.now() / 1000) - 3725,
+    sessionStart: Math.floor(Date.now() / 1000) - 7325,
+    gameStart: Math.floor(Date.now() / 1000) - 612,
+    dailySeconds: 9420,
     lastError: null,
   };
 }

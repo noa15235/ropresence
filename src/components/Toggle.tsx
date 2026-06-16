@@ -7,7 +7,6 @@ interface Props {
   disabled?: boolean;
 }
 
-/** A spring-animated on/off switch. */
 export function Toggle({ checked, onChange, ariaLabel, disabled }: Props) {
   return (
     <motion.button

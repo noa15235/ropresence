@@ -1,6 +1,3 @@
-//! Presence orchestration: the background worker that maps Roblox state to a
-//! Discord activity, manages the connection, and emits live updates to the UI.
-
 pub mod builder;
 pub mod variables;
 
@@ -24,7 +21,17 @@ fn notify(app: &AppHandle, title: &str, body: &str) {
     let _ = app.notification().builder().title(title).body(body).show();
 }
 
-/// The main background loop. Runs on a dedicated std thread for the app's life.
+#[cfg(windows)]
+fn local_date() -> String {
+    use windows::Win32::System::SystemInformation::GetLocalTime;
+    let st = unsafe { GetLocalTime() };
+    format!("{:04}-{:02}-{:02}", st.wYear, st.wMonth, st.wDay)
+}
+#[cfg(not(windows))]
+fn local_date() -> String {
+    String::new()
+}
+
 pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
     let mut discord = DiscordManager::new();
     let mut backoff = Backoff::new();
@@ -33,6 +40,11 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
     let mut game_cache: Option<(u64, api::GameInfo)> = None;
     let mut avatar_cache: Option<(String, Option<String>)> = None;
     let mut userid_cache: Option<(String, Option<u64>)> = None;
+    let mut game_start: Option<i64> = None;
+    let mut current_place: Option<u64> = None;
+    let mut stats = crate::config::store::load_stats(&app);
+    let mut last_tick = unix_now();
+    let mut last_persist = unix_now();
     let mut current_id = String::new();
     let mut prev_in_game = false;
     let mut prev_connected = false;
@@ -42,7 +54,6 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
     loop {
         let cfg = { state.config.lock().unwrap().clone() };
 
-        // Force an immediate (re)connection when the UI asks (one-click connect).
         if state
             .force_reconnect
             .swap(false, std::sync::atomic::Ordering::SeqCst)
@@ -52,11 +63,9 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
             last_payload = None;
         }
 
-        // --- Detect Roblox ------------------------------------------------
         let procs = process_watch::detect();
         let running = procs.any();
 
-        // Session timer anchor: set when Roblox starts, cleared when it stops.
         if running && session_start.is_none() {
             session_start = Some(unix_now());
         } else if !running {
@@ -71,10 +80,11 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
             ..Default::default()
         };
 
-        // --- Parse logs + resolve game info -------------------------------
+        let mut log_join_elapsed: Option<i64> = None;
         if procs.player {
             if let Some(parsed) = log_parser::parse_latest() {
                 rt.in_game = parsed.in_game && parsed.place_id.is_some();
+                log_join_elapsed = parsed.join_elapsed_secs;
                 rt.place_id = parsed.place_id;
                 rt.universe_id = parsed.universe_id;
                 rt.job_id = parsed.job_id;
@@ -120,7 +130,6 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
             }
         }
 
-        // --- Roblox user id (for {userId}, profile button) + avatar -------
         if !cfg.privacy_mode {
             let username = builder::active_username(&cfg);
             if !username.is_empty() {
@@ -149,7 +158,37 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
             }
         }
 
-        // --- Discord connection management --------------------------------
+        let now = unix_now();
+        if rt.in_game {
+            if let Some(elapsed) = log_join_elapsed {
+                game_start = Some(now - elapsed);
+                current_place = rt.place_id;
+            } else if rt.place_id != current_place {
+                current_place = rt.place_id;
+                game_start = Some(now);
+            }
+        } else {
+            current_place = None;
+            game_start = None;
+        }
+        rt.game_start = game_start;
+
+        let today = local_date();
+        if stats.date != today {
+            stats.date = today;
+            stats.seconds = 0;
+        }
+        if running {
+            let dt = (now - last_tick).clamp(0, 60);
+            stats.seconds = stats.seconds.saturating_add(dt as u64);
+        }
+        last_tick = now;
+        rt.daily_seconds = Some(stats.seconds);
+        if now - last_persist >= 30 {
+            crate::config::store::save_stats(&app, &stats);
+            last_persist = now;
+        }
+
         let want_discord = cfg.master_enabled && !cfg.discord_client_id.is_empty();
 
         if cfg.discord_client_id != current_id {
@@ -166,14 +205,12 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
                         backoff.record(true);
                         state.log(LogLevel::Info, "discord", "Connecté à Discord");
                         last_payload = None;
-                        // Let Discord finish the handshake before the first push,
-                        // otherwise the first SET_ACTIVITY can race and close the pipe.
                         std::thread::sleep(std::time::Duration::from_millis(400));
                     }
                     Err(e) => {
                         backoff.record(false);
                         rt.last_error = Some(e.clone());
-                        state.log(LogLevel::Warn, "discord", format!("Connexion échouée : {e}"));
+                        state.log(LogLevel::Error, "discord", format!("Connexion échouée : {e}"));
                     }
                 }
             }
@@ -183,7 +220,6 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
             last_payload = None;
         }
 
-        // --- Push activity (only on change) -------------------------------
         if discord.connected {
             let payload = builder::build(&cfg, &rt);
             if payload != last_payload {
@@ -201,9 +237,7 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
                                 e.clone()
                             };
                             rt.last_error = Some(friendly.clone());
-                            state.log(LogLevel::Warn, "discord", friendly);
-                            // Drop the connection; the backoff governs the next
-                            // attempt so we never hammer Discord's rate limit.
+                            state.log(LogLevel::Error, "discord", friendly);
                             discord.mark_disconnected();
                             backoff.record(false);
                         }
@@ -220,7 +254,6 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
 
         rt.discord_connected = discord.connected;
 
-        // --- Notifications on transitions ---------------------------------
         if cfg.system.notifications {
             if rt.in_game && !prev_in_game {
                 let name = rt.game_name.clone().unwrap_or_else(|| "Roblox".to_string());
@@ -233,13 +266,11 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
         prev_in_game = rt.in_game;
         prev_connected = discord.connected;
 
-        // --- Publish runtime state to the UI ------------------------------
         {
             *state.runtime.lock().unwrap() = rt.clone();
         }
         let _ = app.emit("runtime-update", &rt);
 
-        // --- Wait (wake early on config change, stop on shutdown) ----------
         let poll = cfg.roblox.poll_interval_secs.clamp(2, 15);
         let mut sig = state.signal.lock().unwrap();
         if sig.stop {
@@ -260,7 +291,7 @@ pub fn run_worker(app: AppHandle, state: Arc<AppState>) {
         }
     }
 
-    // Clean shutdown.
+    crate::config::store::save_stats(&app, &stats);
     let _ = discord.clear();
     discord.disconnect();
     state.log(LogLevel::Info, "app", "Worker arrêté");

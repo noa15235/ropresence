@@ -1,6 +1,3 @@
-//! Tauri commands exposed to the front-end. These are intentionally thin and
-//! delegate to the config/state/worker layers.
-
 use crate::config::{store, AppConfig};
 use crate::presence::variables::SUPPORTED_VARIABLES;
 use crate::state::{AppState, LogEntry, RuntimeState};
@@ -35,7 +32,6 @@ pub fn get_variables() -> Vec<String> {
     SUPPORTED_VARIABLES.iter().map(|s| s.to_string()).collect()
 }
 
-/// Toggle the global master switch and persist. Returns the new value.
 #[tauri::command]
 pub fn toggle_master(app: AppHandle, state: Shared) -> Result<bool, String> {
     let new_value = {
@@ -49,8 +45,32 @@ pub fn toggle_master(app: AppHandle, state: Shared) -> Result<bool, String> {
     Ok(new_value)
 }
 
-/// Force an immediate Discord (re)connection: enables the master switch,
-/// resets the backoff and wakes the worker so it connects right now (#1).
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RobloxAccountInfo {
+    pub user_id: u64,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_url: Option<String>,
+}
+
+#[tauri::command]
+pub fn connect_roblox(username: String) -> Result<RobloxAccountInfo, String> {
+    let u = username.trim();
+    if u.is_empty() {
+        return Err("Saisis ton pseudo Roblox.".to_string());
+    }
+    match crate::roblox::api::fetch_account(u) {
+        Some(a) => Ok(RobloxAccountInfo {
+            user_id: a.user_id,
+            username: a.username,
+            display_name: a.display_name,
+            avatar_url: a.avatar_url,
+        }),
+        None => Err("Compte Roblox introuvable. Vérifie le pseudo.".to_string()),
+    }
+}
+
 #[tauri::command]
 pub fn reconnect_discord(app: AppHandle, state: Shared) -> Result<(), String> {
     {
@@ -64,8 +84,6 @@ pub fn reconnect_discord(app: AppHandle, state: Shared) -> Result<(), String> {
     Ok(())
 }
 
-/// Validate a Discord application/client id: format check, then a real
-/// existence check against Discord. Returns the application name on success.
 #[tauri::command]
 pub fn validate_client_id(client_id: String) -> Result<String, String> {
     let id = client_id.trim();
@@ -78,14 +96,16 @@ pub fn validate_client_id(client_id: String) -> Result<String, String> {
     if !(17..=20).contains(&id.len()) {
         return Err("Le Client ID doit comporter entre 17 et 20 chiffres.".to_string());
     }
-    // Format is valid — now do a real RPC probe to confirm the app exists.
     crate::discord::test_connection(id)
 }
 
-/// Open a URL in the user's default browser (http/https only).
 #[tauri::command]
 pub fn open_url(url: String) -> Result<(), String> {
-    if !(url.starts_with("http://") || url.starts_with("https://")) {
+    let scheme_ok = url.starts_with("http://") || url.starts_with("https://");
+    let chars_ok = url
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || ":/._-?=#~+,@".contains(c));
+    if !scheme_ok || !chars_ok || url.len() > 2048 {
         return Err("URL non valide.".to_string());
     }
     #[cfg(windows)]
@@ -112,7 +132,6 @@ pub fn clear_logs(state: Shared) {
     state.logs.lock().unwrap().clear();
 }
 
-/// Export the current config to a JSON file path (#43).
 #[tauri::command]
 pub fn export_config(state: Shared, path: String) -> Result<(), String> {
     let cfg = state.config.lock().unwrap().clone();
@@ -122,7 +141,6 @@ pub fn export_config(state: Shared, path: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Import a config from a JSON file path and apply it (#43).
 #[tauri::command]
 pub fn import_config(app: AppHandle, state: Shared, path: String) -> Result<AppConfig, String> {
     let text = std::fs::read_to_string(&path).map_err(|e| format!("Lecture impossible : {e}"))?;
@@ -147,6 +165,5 @@ pub fn show_main_window(app: AppHandle) {
 
 #[tauri::command]
 pub fn quit_app(app: AppHandle) {
-    // Exiting closes the IPC pipe, which makes Discord auto-clear the presence.
     app.exit(0);
 }

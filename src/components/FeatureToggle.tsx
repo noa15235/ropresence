@@ -8,7 +8,6 @@ interface Props {
   desc?: string;
 }
 
-/** A reusable feature on/off row bound to `config.features[featureKey]` (#17). */
 export function FeatureToggle({ featureKey, desc }: Props) {
   const t = useT();
   const value = useAppStore((s) => s.config?.features[featureKey] ?? false);

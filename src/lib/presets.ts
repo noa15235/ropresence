@@ -1,7 +1,3 @@
-// One-click presence templates and button presets — the "easy" layer on top of
-// the full customization. Applying a preset patches presence + features (and
-// privacy) in a single update.
-
 import type { AppConfig } from "@/types";
 
 export interface PresencePreset {

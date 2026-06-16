@@ -1,4 +1,3 @@
-// Hide the console window in release builds (this is a background tray app).
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
@@ -31,6 +30,7 @@ fn main() {
             commands::get_variables,
             commands::toggle_master,
             commands::reconnect_discord,
+            commands::connect_roblox,
             commands::validate_client_id,
             commands::open_url,
             commands::get_logs,
@@ -43,23 +43,19 @@ fn main() {
         .setup(|app| {
             let handle = app.handle().clone();
 
-            // Load persisted config and seed shared state.
             let cfg = config::store::load_config(&handle);
             let start_minimized = cfg.system.start_minimized;
             let state = Arc::new(AppState::new(cfg));
             app.manage(state.clone());
 
-            // System tray.
             tray::create_tray(&handle)?;
 
-            // Start minimized -> hide the main window (#38).
             if start_minimized {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.hide();
                 }
             }
 
-            // Spawn the background presence worker.
             let worker_handle = handle.clone();
             let worker_state = state.clone();
             std::thread::spawn(move || presence::run_worker(worker_handle, worker_state));
@@ -67,7 +63,6 @@ fn main() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Close-to-tray: the X hides instead of quitting when enabled (#20).
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 let app = window.app_handle();
                 let close_to_tray = app

@@ -1,5 +1,3 @@
-// Shared types mirroring the Rust `AppConfig` / `RuntimeState` (camelCase JSON).
-
 export interface PresenceButton {
   label: string;
   url: string;
@@ -92,6 +90,8 @@ export interface RuntimeState {
   playerCount: number | null;
   maxPlayers: number | null;
   sessionStart: number | null;
+  gameStart: number | null;
+  dailySeconds: number | null;
   lastError: string | null;
 }
 

@@ -31,7 +31,6 @@ export function translate(
   return str;
 }
 
-/** Hook returning a `t(key, vars?)` bound to the current language. */
 export function useT() {
   const lang = (useAppStore((s) => s.config?.appearance.language) ?? "fr") as Lang;
   return (key: string, vars?: Record<string, string | number>) =>

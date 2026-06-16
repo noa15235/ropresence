@@ -1,8 +1,3 @@
-//! Detect whether the Roblox player/studio process is currently running.
-//!
-//! Uses the Windows ToolHelp snapshot API directly (no repeated process
-//! spawning), which is cheap enough to call on every poll tick.
-
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct RobloxProcesses {
     pub player: bool,
@@ -62,7 +57,6 @@ pub fn detect() -> RobloxProcesses {
 
 #[cfg(not(windows))]
 pub fn detect() -> RobloxProcesses {
-    // Non-Windows builds (CI, type-checking) get an empty result.
     RobloxProcesses::default()
 }
 

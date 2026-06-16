@@ -41,6 +41,11 @@
     "masterOff": "Presence off",
     "session": "Session"
   },
+  "stats": {
+    "game": "Time in this game",
+    "session": "Total Roblox session",
+    "today": "Playtime today (resets at midnight)"
+  },
   "connect": {
     "title": "Discord disconnected",
     "sub": "Make sure Discord is open, then click to connect.",
@@ -114,6 +119,15 @@
   "roblox": {
     "title": "Roblox",
     "subtitle": "Game detection and account settings.",
+    "accountTitle": "My Roblox account",
+    "accountHint": "Enter your username and click Connect: the app fetches your avatar, id and profile (public info, no password). This enables the \"My profile\" button and avatar.",
+    "connect": "Connect",
+    "connecting": "Searching…",
+    "search": "Search",
+    "confirmQuestion": "Is this your account?",
+    "yesItsMe": "Yes, that's me",
+    "no": "No",
+    "connected": "connected ✓",
     "username": "Roblox username",
     "usernamePh": "Your username",
     "accounts": "Accounts",

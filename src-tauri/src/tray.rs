@@ -1,5 +1,3 @@
-//! System tray icon + menu (#19): Open / Toggle presence / Quit.
-
 use crate::config::store;
 use crate::state::AppState;
 use std::sync::Arc;

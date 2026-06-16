@@ -1,6 +1,3 @@
-//! Exponential backoff used to throttle Discord reconnection attempts (#25),
-//! so a closed Discord doesn't make us hammer the IPC socket.
-
 use std::time::{Duration, Instant};
 
 pub struct Backoff {
@@ -20,7 +17,6 @@ impl Backoff {
         }
     }
 
-    /// Whether enough time has elapsed to attempt another connection.
     pub fn ready(&self) -> bool {
         match self.last_attempt {
             None => true,
@@ -28,7 +24,6 @@ impl Backoff {
         }
     }
 
-    /// Record the outcome of an attempt: reset on success, grow on failure.
     pub fn record(&mut self, success: bool) {
         self.last_attempt = Some(Instant::now());
         if success {
@@ -38,7 +33,6 @@ impl Backoff {
         }
     }
 
-    /// Reset the backoff (e.g. when the client id changes).
     pub fn reset(&mut self) {
         self.current = self.base;
         self.last_attempt = None;

@@ -2,6 +2,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { useT } from "@/i18n";
 import { api, IS_TAURI } from "@/lib/tauri";
 import { Toggle } from "./Toggle";
+import { SessionStats } from "./SessionStats";
 
 export function StatusBar() {
   const t = useT();
@@ -9,7 +10,6 @@ export function StatusBar() {
   const master = useAppStore((s) => s.config?.masterEnabled ?? false);
   const update = useAppStore((s) => s.updateConfig);
 
-  // Roblox pill state.
   let robloxDot = "off";
   let robloxText = t("status.noGame");
   if (rt.inGame) {
@@ -45,6 +45,8 @@ export function StatusBar() {
       </span>
 
       <span className="statusbar-spacer" />
+
+      <SessionStats />
 
       <span className="master">
         {master ? t("status.masterOn") : t("status.masterOff")}

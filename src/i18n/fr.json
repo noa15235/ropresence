@@ -41,6 +41,11 @@
     "masterOff": "Présence désactivée",
     "session": "Session"
   },
+  "stats": {
+    "game": "Temps sur ce jeu",
+    "session": "Session Roblox totale",
+    "today": "Temps de jeu aujourd'hui (remis à zéro à minuit)"
+  },
   "connect": {
     "title": "Discord déconnecté",
     "sub": "Vérifie que Discord est ouvert, puis clique pour te connecter.",
@@ -114,6 +119,15 @@
   "roblox": {
     "title": "Roblox",
     "subtitle": "Détection du jeu et réglages de compte.",
+    "accountTitle": "Mon compte Roblox",
+    "accountHint": "Saisis ton pseudo et clique sur Connecter : l'app récupère ton avatar, ton ID et ton profil (infos publiques, aucun mot de passe). Ça active le bouton « Mon profil » et l'avatar.",
+    "connect": "Connecter",
+    "connecting": "Recherche…",
+    "search": "Rechercher",
+    "confirmQuestion": "C'est bien ton compte ?",
+    "yesItsMe": "Oui, c'est moi",
+    "no": "Non",
+    "connected": "connecté ✓",
     "username": "Pseudo Roblox",
     "usernamePh": "Votre pseudo",
     "accounts": "Comptes",

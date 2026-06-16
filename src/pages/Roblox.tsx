@@ -1,10 +1,19 @@
-import { Trash2, Plus, Gamepad2 } from "lucide-react";
+import { useState } from "react";
+import { Trash2, Plus, Gamepad2, Check, Loader2, UserRound } from "lucide-react";
 import { Section } from "@/components/GlassPanel";
 import { Field } from "@/components/Field";
 import { Toggle } from "@/components/Toggle";
 import { useAppStore } from "@/store/useAppStore";
 import { useT } from "@/i18n";
+import { api, IS_TAURI } from "@/lib/tauri";
 import type { RobloxConfig } from "@/types";
+
+interface Account {
+  userId: number;
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
 
 export function Roblox() {
   const t = useT();
@@ -16,17 +25,148 @@ export function Roblox() {
   const setR = (patch: Partial<RobloxConfig>) =>
     update((c) => ({ ...c, roblox: { ...c.roblox, ...patch } }));
 
+  const [input, setInput] = useState(r.username);
+  const [pending, setPending] = useState<Account | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [connectErr, setConnectErr] = useState<string | null>(null);
+
+  async function lookup() {
+    const name = input.trim();
+    if (!name) return;
+    setConnecting(true);
+    setConnectErr(null);
+    setPending(null);
+    setAccount(null);
+    try {
+      const a: Account = IS_TAURI
+        ? await api.connectRoblox(name)
+        : { userId: 1, username: name, displayName: name, avatarUrl: null };
+      setPending(a);
+    } catch (e) {
+      setConnectErr(String(e));
+    } finally {
+      setConnecting(false);
+    }
+  }
+
+  function confirmAccount() {
+    if (!pending) return;
+    const a = pending;
+    update((c) => ({
+      ...c,
+      roblox: { ...c.roblox, username: a.username },
+      presence: {
+        ...c.presence,
+        smallImageMode:
+          c.presence.smallImageMode === "none"
+            ? "avatar"
+            : c.presence.smallImageMode,
+      },
+    }));
+    setAccount(a);
+    setPending(null);
+  }
+
+  function rejectAccount() {
+    setPending(null);
+  }
+
   return (
     <div className="stack">
+      <Section title={t("roblox.accountTitle")}>
+        <p className="note" style={{ marginBottom: 12 }}>
+          {t("roblox.accountHint")}
+        </p>
+        <div className="row" style={{ gap: 10, alignItems: "flex-end" }}>
+          <Field label={t("roblox.username")} style={{ flex: 1 }}>
+            <input
+              className="input"
+              value={input}
+              placeholder={t("roblox.usernamePh")}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setConnectErr(null);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && lookup()}
+            />
+          </Field>
+          <button
+            className="btn btn-primary"
+            disabled={connecting || !input.trim()}
+            onClick={lookup}
+          >
+            {connecting ? (
+              <>
+                <Loader2 size={15} className="spin" /> {t("roblox.connecting")}
+              </>
+            ) : (
+              <>
+                <UserRound size={15} /> {t("roblox.search")}
+              </>
+            )}
+          </button>
+        </div>
+        {connectErr && <span className="field-error">{connectErr}</span>}
+
+        {pending && (
+          <div className="account-card">
+            <div className="account-avatar">
+              {pending.avatarUrl ? (
+                <img src={pending.avatarUrl} alt="" />
+              ) : (
+                <UserRound size={22} />
+              )}
+            </div>
+            <div className="stack" style={{ gap: 2, flex: 1 }}>
+              <div className="feature-name">{pending.displayName}</div>
+              <div className="feature-desc">
+                @{pending.username} · ID {pending.userId}
+              </div>
+              <div className="feature-desc" style={{ marginTop: 4 }}>
+                {t("roblox.confirmQuestion")}
+              </div>
+            </div>
+            <div className="row" style={{ gap: 8 }}>
+              <button className="btn btn-sm" onClick={rejectAccount}>
+                {t("roblox.no")}
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={confirmAccount}
+              >
+                <Check size={14} /> {t("roblox.yesItsMe")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {account && (
+          <div className="account-card">
+            <div className="account-avatar">
+              {account.avatarUrl ? (
+                <img src={account.avatarUrl} alt="" />
+              ) : (
+                <UserRound size={22} />
+              )}
+            </div>
+            <div className="stack" style={{ gap: 2 }}>
+              <div className="feature-name">
+                <Check
+                  size={13}
+                  style={{ verticalAlign: "-2px", color: "var(--status-ok)" }}
+                />{" "}
+                {account.displayName}
+              </div>
+              <div className="feature-desc">
+                @{account.username} · ID {account.userId} — {t("roblox.connected")}
+              </div>
+            </div>
+          </div>
+        )}
+      </Section>
+
       <Section title={t("roblox.title")}>
-        <Field label={t("roblox.username")}>
-          <input
-            className="input"
-            value={r.username}
-            placeholder={t("roblox.usernamePh")}
-            onChange={(e) => setR({ username: e.target.value })}
-          />
-        </Field>
 
         <div className="feature-row">
           <div className="feature-text">
