@@ -9,6 +9,8 @@ dist-ssr
 
 # Tauri / Rust
 src-tauri/target
+src-tauri/*.dll
+release-pkg/
 
 # Editor / OS
 .vscode/*
