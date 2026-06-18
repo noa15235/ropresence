@@ -51,6 +51,13 @@ pub struct PresenceConfig {
     pub small_image_key: String,
     pub small_image_text: String,
     pub buttons: Vec<PresenceButton>,
+    // Texte personnalisable hors-jeu (menu Roblox) et dans Studio.
+    pub menu_details: String,
+    pub menu_state: String,
+    pub studio_details: String,
+    pub studio_state: String,
+    // Mode du minuteur : "auto" | "session" | "game" | "off".
+    pub timer_mode: String,
 }
 
 impl Default for PresenceConfig {
@@ -65,6 +72,11 @@ impl Default for PresenceConfig {
             small_image_key: "".to_string(),
             small_image_text: "{username}".to_string(),
             buttons: Vec::new(),
+            menu_details: "Roblox".to_string(),
+            menu_state: "Dans le menu".to_string(),
+            studio_details: "Roblox Studio".to_string(),
+            studio_state: "En train de créer".to_string(),
+            timer_mode: "auto".to_string(),
         }
     }
 }

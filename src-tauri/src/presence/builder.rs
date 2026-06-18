@@ -25,6 +25,16 @@ pub fn active_username(cfg: &AppConfig) -> String {
 }
 
 fn make_ctx(cfg: &AppConfig, rt: &RuntimeState) -> VarContext {
+    let studio = rt.is_studio && cfg.roblox.detect_studio;
+    let status = if rt.in_game {
+        "En jeu"
+    } else if studio {
+        "Studio"
+    } else if rt.roblox_running {
+        "Menu"
+    } else {
+        "Hors ligne"
+    };
     VarContext {
         game: rt.game_name.clone().unwrap_or_default(),
         creator: rt.creator_name.clone().unwrap_or_default(),
@@ -33,8 +43,21 @@ fn make_ctx(cfg: &AppConfig, rt: &RuntimeState) -> VarContext {
         place_id: rt.place_id.map(|x| x.to_string()).unwrap_or_default(),
         universe_id: rt.universe_id.map(|x| x.to_string()).unwrap_or_default(),
         players: rt.player_count.map(|x| x.to_string()).unwrap_or_default(),
+        max_players: rt.max_players.map(|x| x.to_string()).unwrap_or_default(),
         job_id: rt.job_id.clone().unwrap_or_default(),
+        date: super::local_date(),
+        status: status.to_string(),
         elapsed_secs: rt.session_start.map(|s| (unix_now() - s).max(0)),
+        game_elapsed_secs: rt.game_start.map(|s| (unix_now() - s).max(0)),
+        daily_secs: rt.daily_seconds.map(|s| s as i64),
+    }
+}
+
+fn tpl_or(value: &str, default: &str) -> String {
+    if value.trim().is_empty() {
+        default.to_string()
+    } else {
+        value.to_string()
     }
 }
 
@@ -76,9 +99,15 @@ pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
     let (details_tpl, state_tpl) = if rt.in_game {
         (pr.details.clone(), pr.state.clone())
     } else if studio {
-        ("Roblox Studio".to_string(), "En train de créer".to_string())
+        (
+            tpl_or(&pr.studio_details, "Roblox Studio"),
+            tpl_or(&pr.studio_state, "En train de créer"),
+        )
     } else {
-        ("Roblox".to_string(), "Dans le menu".to_string())
+        (
+            tpl_or(&pr.menu_details, "Roblox"),
+            tpl_or(&pr.menu_state, "Dans le menu"),
+        )
     };
 
     if f.show_details {
@@ -100,10 +129,18 @@ pub fn build(cfg: &AppConfig, rt: &RuntimeState) -> Option<ActivityPayload> {
     }
 
     if f.show_timer {
-        p.start_timestamp = if rt.in_game {
-            rt.game_start.or(rt.session_start)
-        } else {
-            rt.session_start
+        p.start_timestamp = match pr.timer_mode.as_str() {
+            "off" => None,
+            "session" => rt.session_start,
+            "game" => rt.game_start.or(rt.session_start),
+            // "auto" : temps du jeu en cours si en jeu, sinon session.
+            _ => {
+                if rt.in_game {
+                    rt.game_start.or(rt.session_start)
+                } else {
+                    rt.session_start
+                }
+            }
         };
     }
 

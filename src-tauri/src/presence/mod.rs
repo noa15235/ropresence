@@ -22,13 +22,13 @@ fn notify(app: &AppHandle, title: &str, body: &str) {
 }
 
 #[cfg(windows)]
-fn local_date() -> String {
+pub(crate) fn local_date() -> String {
     use windows::Win32::System::SystemInformation::GetLocalTime;
     let st = unsafe { GetLocalTime() };
     format!("{:04}-{:02}-{:02}", st.wYear, st.wMonth, st.wDay)
 }
 #[cfg(not(windows))]
-fn local_date() -> String {
+pub(crate) fn local_date() -> String {
     String::new()
 }
 

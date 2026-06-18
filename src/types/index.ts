@@ -16,6 +16,8 @@ export interface FeatureFlags {
 
 export type ImageMode = "auto" | "asset" | "url" | "none" | "avatar";
 
+export type TimerMode = "auto" | "session" | "game" | "off";
+
 export interface PresenceConfig {
   details: string;
   state: string;
@@ -26,6 +28,11 @@ export interface PresenceConfig {
   smallImageKey: string;
   smallImageText: string;
   buttons: PresenceButton[];
+  menuDetails: string;
+  menuState: string;
+  studioDetails: string;
+  studioState: string;
+  timerMode: TimerMode;
 }
 
 export interface RobloxConfig {

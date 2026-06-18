@@ -10,8 +10,19 @@ export const DEFAULT_VARIABLES = [
   "{placeId}",
   "{universeId}",
   "{players}",
+  "{maxPlayers}",
+  "{serverSize}",
+  "{fill}",
   "{jobId}",
+  "{jobShort}",
   "{time}",
+  "{sessionTime}",
+  "{gameTime}",
+  "{daily}",
+  "{date}",
+  "{status}",
+  "{gameUpper}",
+  "{creatorUpper}",
 ];
 
 export function defaultConfig(): AppConfig {
@@ -30,6 +41,11 @@ export function defaultConfig(): AppConfig {
       smallImageKey: "",
       smallImageText: "{username}",
       buttons: [],
+      menuDetails: "Roblox",
+      menuState: "Dans le menu",
+      studioDetails: "Roblox Studio",
+      studioState: "En train de créer",
+      timerMode: "auto",
     },
     roblox: {
       username: "",

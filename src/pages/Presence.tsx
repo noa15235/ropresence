@@ -125,6 +125,58 @@ export function Presence() {
           </div>
         </Section>
 
+        <Section title={t("presence.advanced")}>
+          <Field label={t("presence.timerMode")} hint={t("presence.timerModeHint")}>
+            <select
+              className="select"
+              value={p.timerMode}
+              onChange={(e) =>
+                setP({ timerMode: e.target.value as PresenceConfig["timerMode"] })
+              }
+            >
+              <option value="auto">{t("presence.timerAuto")}</option>
+              <option value="game">{t("presence.timerGame")}</option>
+              <option value="session">{t("presence.timerSession")}</option>
+              <option value="off">{t("presence.timerOff")}</option>
+            </select>
+          </Field>
+
+          <div className="grid-2">
+            <Field label={t("presence.menuDetails")}>
+              <input
+                className="input"
+                value={p.menuDetails}
+                placeholder="Roblox"
+                onChange={(e) => setP({ menuDetails: e.target.value })}
+              />
+            </Field>
+            <Field label={t("presence.menuState")}>
+              <input
+                className="input"
+                value={p.menuState}
+                placeholder="Dans le menu"
+                onChange={(e) => setP({ menuState: e.target.value })}
+              />
+            </Field>
+            <Field label={t("presence.studioDetails")}>
+              <input
+                className="input"
+                value={p.studioDetails}
+                placeholder="Roblox Studio"
+                onChange={(e) => setP({ studioDetails: e.target.value })}
+              />
+            </Field>
+            <Field label={t("presence.studioState")}>
+              <input
+                className="input"
+                value={p.studioState}
+                placeholder="En train de créer"
+                onChange={(e) => setP({ studioState: e.target.value })}
+              />
+            </Field>
+          </div>
+        </Section>
+
         <Section title={t("presence.display")}>
           <FeatureToggle featureKey="showDetails" />
           <FeatureToggle featureKey="showState" />

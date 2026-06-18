@@ -5,7 +5,6 @@ import {
   Trash2,
   Power,
   RefreshCw,
-  ExternalLink,
   Plug,
 } from "lucide-react";
 import {
@@ -21,8 +20,6 @@ import { useAppStore } from "@/store/useAppStore";
 import { useT } from "@/i18n";
 import { api, IS_TAURI } from "@/lib/tauri";
 import type { Appearance, LogEntry, SystemConfig } from "@/types";
-
-const PORTAL_URL = "https://discord.com/developers/applications";
 
 const ACCENT_PRESETS = ["#2E9BFF", "#7C5CFF", "#FF5C8A", "#3BA55D", "#FAA61A", "#FF6B3D"];
 
@@ -251,75 +248,28 @@ export function Settings() {
 
 function DiscordSection() {
   const t = useT();
-  const clientId = useAppStore((s) => s.config?.discordClientId ?? "");
   const connected = useAppStore((s) => s.runtime.discordConnected);
-  const update = useAppStore((s) => s.updateConfig);
-  const [val, setVal] = useState(clientId);
-  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  async function validateAndConnect() {
-    setChecking(true);
-    setStatus(null);
+  async function reconnect() {
+    if (!IS_TAURI) return;
+    setBusy(true);
     try {
-      const name = await api.validateClientId(val);
-      update((c) => ({ ...c, discordClientId: val.trim(), masterEnabled: true }));
-      setStatus({ ok: true, msg: `${t("setup.valid")} · ${name}` });
-      if (IS_TAURI) {
-        setTimeout(() => api.reconnectDiscord().catch(() => {}), 400);
-      }
-    } catch (e) {
-      setStatus({ ok: false, msg: String(e) });
+      await api.reconnectDiscord();
+    } catch {
+      /* ignoré */
     } finally {
-      setChecking(false);
+      setTimeout(() => setBusy(false), 1500);
     }
   }
 
   return (
     <Section title={t("settings.discord")}>
-      <div className="help-box">
-        <div className="help-title">{t("setup.instructionsTitle")}</div>
-        <ol className="help-steps">
-          <li>{t("setup.instr1")}</li>
-          <li>{t("setup.instr2")}</li>
-          <li>{t("setup.instr3")}</li>
-          <li>{t("setup.instr4")}</li>
-        </ol>
-        <button
-          className="btn btn-sm"
-          style={{ marginTop: 10 }}
-          onClick={() => api.openUrl(PORTAL_URL)}
-        >
-          <ExternalLink size={14} />
-          {t("setup.openPortal")}
-        </button>
-      </div>
-      <Field label={t("setup.clientIdLabel")} hint={t("setup.clientIdHelp")}>
-        <input
-          className="input"
-          value={val}
-          placeholder={t("setup.clientIdPlaceholder")}
-          onChange={(e) => {
-            setVal(e.target.value);
-            setStatus(null);
-          }}
-        />
-        {status && (
-          <span className={status.ok ? "field-ok" : "field-error"}>{status.msg}</span>
-        )}
-      </Field>
-      <div className="row">
-        <button
-          className="btn btn-primary"
-          disabled={checking || !val.trim()}
-          onClick={validateAndConnect}
-        >
+      <p className="note">{t("settings.discordAuto")}</p>
+      <div className="row" style={{ marginTop: 12 }}>
+        <button className="btn btn-primary" disabled={busy} onClick={reconnect}>
           <Plug size={15} />
-          {checking ? t("connect.connecting") : t("settings.validateConnect")}
-        </button>
-        <button className="btn" onClick={() => api.openUrl(PORTAL_URL)}>
-          <ExternalLink size={15} />
-          {t("setup.openPortal")}
+          {busy ? t("connect.connecting") : t("settings.reconnect")}
         </button>
         <span className="spacer" />
         <span className="pill">

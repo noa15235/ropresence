@@ -4,7 +4,6 @@ import { register, unregisterAll } from "@tauri-apps/plugin-global-shortcut";
 import { Sidebar, type Page } from "@/components/Sidebar";
 import { StatusBar } from "@/components/StatusBar";
 import { DiscordConnectBanner } from "@/components/DiscordConnectBanner";
-import { Setup } from "@/pages/Setup";
 import { Presence } from "@/pages/Presence";
 import { Roblox } from "@/pages/Roblox";
 import { Profiles } from "@/pages/Profiles";
@@ -87,10 +86,6 @@ export default function App() {
         <div className="muted">…</div>
       </div>
     );
-  }
-
-  if (!config.setupComplete) {
-    return <Setup />;
   }
 
   const pages: Record<Page, ReactElement> = {
