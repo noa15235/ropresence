@@ -24,9 +24,6 @@ Thumbs.db
 npm-debug.log*
 pnpm-debug.log*
 
-# Local tooling / settings
-.claude/
-
 # Environment
 .env
 .env.*
