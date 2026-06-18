@@ -179,7 +179,11 @@ impl Default for AppConfig {
             discord_client_id: DEFAULT_CLIENT_ID.to_string(),
             master_enabled: true,
             privacy_mode: false,
-            setup_complete: false,
+            // true : dès l'installation, l'app utilise l'Application ID Discord
+            // intégré (DEFAULT_CLIENT_ID) et se connecte automatiquement, sans
+            // forcer l'assistant de création d'app. Créer sa propre app reste
+            // possible et optionnel via Réglages → Discord (pour le branding).
+            setup_complete: true,
             presence: PresenceConfig::default(),
             roblox: RobloxConfig::default(),
             features: FeatureFlags::default(),

@@ -32,11 +32,16 @@ fn re_place() -> &'static Regex {
     RE.get_or_init(|| Regex::new(r"(?i)placeid[:=]?\s*(\d+)").unwrap())
 }
 
+// Signaux de départ FIABLES uniquement : retour au menu / fermeture du jeu.
+// On exclut volontairement les Disconnect réseau génériques (Client:Disconnect,
+// "Disconnect from") car Roblox les émet aussi lors d'un téléport, juste APRÈS
+// la nouvelle ligne "Joining game" — ce qui faisait croire à tort à un départ
+// (jeu affiché comme "menu" alors qu'on est en jeu).
 fn re_leave() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
         Regex::new(
-            r"(?i)(Client:Disconnect|handleGameWillClose|leaveUGCGame|done disconnecting|Disconnect from|GameDisconnect)",
+            r"(?i)(handleGameWillClose|leaveUGCGame|done disconnecting|GameDisconnect)",
         )
         .unwrap()
     })
@@ -153,9 +158,21 @@ mod tests {
 
     #[test]
     fn detects_leave_after_join() {
-        let log = "Joining game 'id-1234' place 111 at 1.2.3.4\n[FLog::Network] Client:Disconnect";
+        let log = "Joining game 'abcdef12-3456-7890' place 111 at 1.2.3.4\n[FLog::SingleSurfaceApp] leaveUGCGameInternal";
         let parsed = parse_content(log);
         assert_eq!(parsed.place_id, Some(111));
         assert!(!parsed.in_game);
+    }
+
+    // Régression : un téléport émet "Joining game" puis un Client:Disconnect de
+    // l'ancienne connexion juste après. On doit rester EN JEU, pas dans le menu.
+    #[test]
+    fn teleport_disconnect_after_join_stays_in_game() {
+        let log = "2026-06-18T18:05:39.390Z,17332.39,56f0,6 [FLog::Output] ! Joining game '90115922-731c-4c3c-978a-9caf51bc5732' place 12699642568 at 10.206.16.94\n\
+2026-06-18T18:05:40.066Z,17333.06,5df8,6,Info [DFLog::NetworkClient] Client:Disconnect\n\
+2026-06-18T18:05:40.765Z,17333.76,5df8,6,Info [DFLog::NetworkClient] Client:Disconnect";
+        let parsed = parse_content(log);
+        assert_eq!(parsed.place_id, Some(12699642568));
+        assert!(parsed.in_game, "un Disconnect réseau post-téléport ne doit pas être traité comme un départ");
     }
 }
